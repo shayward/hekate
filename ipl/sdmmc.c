@@ -165,15 +165,26 @@ static int _sdmmc_storage_readwrite(sdmmc_storage_t *storage, u32 sector, u32 nu
 	while (num_sectors)
 	{
 		u32 blkcnt = 0;
-		//Retry once on error.
-		if (!_sdmmc_storage_readwrite_ex(storage, &blkcnt, sector, MIN(num_sectors, 0xFFFF), bbuf, is_write))
-			if (!_sdmmc_storage_readwrite_ex(storage, &blkcnt, sector, MIN(num_sectors, 0xFFFF), bbuf, is_write))
-				return 0;
+		//Retry 9 times on error.
+		u32 retries = 10;
+		do
+		{
+			if (_sdmmc_storage_readwrite_ex(storage, &blkcnt, sector, MIN(num_sectors, 0xFFFF), bbuf, is_write))
+				goto out;
+			else
+				retries--;
+
+			sleep(100000);
+		} while (retries);
+		return 0;
+
+out:;
 		DPRINTF("readwrite: %08X\n", blkcnt);
 		sector += blkcnt;
 		num_sectors -= blkcnt;
 		bbuf += 512 * blkcnt;
 	}
+	return 1;
 }
 
 int sdmmc_storage_read(sdmmc_storage_t *storage, u32 sector, u32 num_sectors, void *buf)
@@ -296,7 +307,7 @@ static void _mmc_storage_parse_csd(sdmmc_storage_t *storage)
 	storage->csd.capacity = (1 + unstuff_bits(raw_csd, 62, 12)) << (unstuff_bits(raw_csd, 47, 3) + 2);
 }
 
-static int _mmc_storage_parse_ext_csd(sdmmc_storage_t *storage, u8 *buf)
+static void _mmc_storage_parse_ext_csd(sdmmc_storage_t *storage, u8 *buf)
 {
 	storage->ext_csd.rev = buf[EXT_CSD_REV];
 	storage->ext_csd.ext_struct = buf[EXT_CSD_STRUCTURE];
@@ -422,9 +433,9 @@ static int _mmc_storage_enable_highspeed(sdmmc_storage_t *storage, u32 card_type
 		return _mmc_storage_enable_HS400(storage);
 
 	if (sdmmc_get_bus_width(storage->sdmmc) == SDMMC_BUS_WIDTH_8 ||
-		sdmmc_get_bus_width(storage->sdmmc) == SDMMC_BUS_WIDTH_4
+		(sdmmc_get_bus_width(storage->sdmmc) == SDMMC_BUS_WIDTH_4
 		&& card_type & EXT_CSD_CARD_TYPE_HS200_1_8V
-		&& (type == 4 || type == 3))
+		&& (type == 4 || type == 3)))
 		return _mmc_storage_enable_HS200(storage);
 
 out:;
@@ -756,12 +767,12 @@ int _sd_storage_enable_highspeed(sdmmc_storage_t *storage, u32 hs_type, u8 *buf)
 	if (type_out != hs_type)
 		return 0;
 
-	if (((u16)buf[0] << 8) | buf[1] < 0x320)
+	if ((((u16)buf[0] << 8) | buf[1]) < 0x320)
 	{
 		if (!_sd_storage_switch(storage, buf, 1, hs_type))
 			return 0;
 
-		if (type_out != buf[16] & 0xF)
+		if (type_out != (buf[16] & 0xF))
 			return 0;
 	}
 
@@ -838,7 +849,7 @@ static void _sd_storage_parse_ssr(sdmmc_storage_t *storage)
 	raw_ssr2[1] = *(u32 *)&storage->raw_ssr[20];
 	raw_ssr2[0] = *(u32 *)&storage->raw_ssr[16];
 
-	storage->ssr.bus_width = unstuff_bits(raw_ssr1, 510 - 384, 2) & SD_BUS_WIDTH_4 ? 4 : 1;
+	storage->ssr.bus_width = (unstuff_bits(raw_ssr1, 510 - 384, 2) & SD_BUS_WIDTH_4) ? 4 : 1;
 	switch(unstuff_bits(raw_ssr1, 440 - 384, 8))
 	{
 	case 0:

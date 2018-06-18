@@ -14,22 +14,22 @@
 * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _I2C_H_
-#define _I2C_H_
+#ifndef _ARM64_H_
+#define _ARM64_H_
 
 #include "types.h"
 
-#define I2C_1 0
-#define I2C_2 1
-#define I2C_3 2
-#define I2C_4 3
-#define I2C_5 4
-#define I2C_6 5
+#define LSL0 0
+#define LSL16 16
+#define LSL32 32
 
-void i2c_init(u32 idx);
-int i2c_send_buf_small(u32 idx, u32 x, u32 y, u8 *buf, u32 size);
-int i2c_recv_buf_small(u8 *buf, u32 size, u32 idx, u32 x, u32 y);
-int i2c_send_byte(u32 idx, u32 x, u32 y, u8 b);
-u8 i2c_recv_byte(u32 idx, u32 x, u32 y);
+#define _PAGEOFF(x) ((x) & 0xFFFFF000)
+
+#define _ADRP(r, o) 0x90000000 | ((((o) >> 12) & 0x3) << 29) | ((((o) >> 12) & 0x1FFFFC) << 3) | ((r) & 0x1F)
+#define _BL(a, o) 0x94000000 | ((((o) - (a)) >> 2) & 0x3FFFFFF)
+#define _B(a, o) 0x94000000 | ((((o) - (a)) >> 2) & 0x3FFFFFF)
+#define _MOVKX(r, i, s) 0xF2800000 | (((s) & 0x30) << 17) | (((i) & 0xFFFF) << 5) | ((r) & 0x1F)
+#define _MOVZX(r, i, s) 0xD2800000 | (((s) & 0x30) << 17) | (((i) & 0xFFFF) << 5) | ((r) & 0x1F)
+#define _NOP() 0xD503201F
 
 #endif

@@ -1,5 +1,6 @@
 /*
 * Copyright (c) 2018 naehrwert
+* Copyright (C) 2018 CTCaer
 *
 * This program is free software; you can redistribute it and/or modify it
 * under the terms and conditions of the GNU General Public License,
@@ -25,5 +26,6 @@
 
 u32 btn_read();
 u32 btn_wait();
+u32 btn_wait_timeout(u32 time_ms, u32 mask);
 
 #endif

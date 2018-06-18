@@ -1,5 +1,6 @@
 /*
 * Copyright (c) 2018 naehrwert
+* Copyright (C) 2018 CTCaer
 *
 * This program is free software; you can redistribute it and/or modify it
 * under the terms and conditions of the GNU General Public License,
@@ -18,6 +19,7 @@
 #include "i2c.h"
 #include "gpio.h"
 #include "t210.h"
+#include "util.h"
 
 u32 btn_read()
 {
@@ -36,22 +38,36 @@ u32 btn_wait()
 	u32 res = 0, btn = btn_read();
 	int pwr = 0;
 
-	// Power button down, raise a filter.
+	//Power button down, raise a filter.
 	if (btn & BTN_POWER)
 	{
 		pwr = 1;
-		btn &= 0xFFFFFFFE;
+		btn &= ~BTN_POWER;
 	}
 
 	do
 	{
 		res = btn_read();
-		// Power button up, remove filter.
+		//Power button up, remove filter.
 		if (!(res & BTN_POWER) && pwr)
 			pwr = 0;
-		// Power button still down.
-		else if (pwr)
-			res &= 0xFFFFFFFE;
+		else if (pwr) //Power button still down.
+			res &= ~BTN_POWER;
 	} while (btn == res);
+
+	return res;
+}
+
+u32 btn_wait_timeout(u32 time_ms, u32 mask)
+{
+	u32 timeout = get_tmr() + (time_ms * 1000);
+	u32 res = btn_read() & mask;
+
+	do
+	{
+		if (!(res & mask))
+			res = btn_read() & mask;
+	} while (get_tmr() < timeout);
+
 	return res;
 }

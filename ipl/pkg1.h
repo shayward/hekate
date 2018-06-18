@@ -25,12 +25,6 @@
 		{ 0xFFFFFFFF, 0xFFFFFFFF } \
 	}
 
-typedef struct _patch_t
-{
-	u32 off;
-	u32 val;
-} patch_t;
-
 typedef struct _pkg1_id_t
 {
 	const char *id;
@@ -39,6 +33,8 @@ typedef struct _pkg1_id_t
 	u32 pkg11_off;
 	u32 sec_map[3];
 	u32 secmon_base;
+	u32 warmboot_base;
+	int set_warmboot;
 	patch_t *secmon_patchset;
 } pkg1_id_t;
 
@@ -56,6 +52,6 @@ typedef struct _pk11_hdr_t
 
 const pkg1_id_t *pkg1_identify(u8 *pkg1);
 void pkg1_decrypt(const pkg1_id_t *id, u8 *pkg1);
-void pkg1_unpack(void *warmboot_dst, void *secmon_dst, const pkg1_id_t *id, u8 *pkg1);
+void pkg1_unpack(void *warmboot_dst, void *secmon_dst, void *ldr_dst, const pkg1_id_t *id, u8 *pkg1);
 
 #endif
